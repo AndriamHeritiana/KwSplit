@@ -1,50 +1,151 @@
-# Welcome to your Expo app 👋
+# KwSplit - Gestion de Consommation Électrique
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+## À propos du projet
 
-## Get started
+KwSplit est une application mobile développée avec React Native qui permet de suivre, calculer et enregistrer la consommation électrique de deux maisons :
+- **Maison 1** : connectée directement au fournisseur JIRAMA, avec une consommation mesurée par un compteur principal.
+- **Maison 2** : alimentée à partir de la Maison 1, avec une consommation mesurée par un sous-compteur.
 
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+L'application calcule automatiquement la répartition des coûts entre les deux maisons selon une règle de trois :
+```
+Montant Maison 2 = Prix JIRAMA total × (valeur sous-compteur ÷ valeur compteur principal)
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Architecture
 
-## Learn more
+Ce projet est structuré selon les principes de la Clean Architecture, qui sépare le code en couches distinctes avec des responsabilités claires :
 
-To learn more about developing your project with Expo, look at the following resources:
+### 1. Core (Cœur de l'application)
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+#### Domain (Domaine)
+Contient les règles métier et les entités principales de l'application :
 
-## Join the community
+- **Entities** : Modèles de données fondamentaux
+  - `Reading.ts` : Représente un relevé de compteur
+  - `House.ts` : Représente une maison
+  - `Consumption.ts` : Représente une consommation électrique
 
-Join our community of developers creating universal apps.
+- **Repositories** : Interfaces définissant comment accéder aux données
+  - `ReadingRepository.ts` : Interface pour la gestion des relevés
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- **Usecases** : Cas d'utilisation de l'application
+  - `AddReadingUseCase.ts` : Ajouter un nouveau relevé
+  - `GetHistoryUseCase.ts` : Récupérer l'historique des relevés
+  - `CalculateConsumptionUseCase.ts` : Calculer la consommation
+  - `GetAlertsUseCase.ts` : Obtenir les alertes de consommation
+
+#### Data (Données)
+Implémente les interfaces du domaine et gère l'accès aux données :
+
+- **Repositories** : Implémentations concrètes des interfaces du domaine
+  - `ReadingRepositoryImpl.ts` : Implémentation du repository de relevés
+
+- **Datasources** : Sources de données
+  - `LocalDataSource.ts` : Stockage local (AsyncStorage)
+  - `RemoteDataSource.ts` : Stockage distant (Firebase)
+
+- **Services** : Services spécifiques
+  - `OcrService.ts` : Interface pour la reconnaissance optique de caractères
+
+#### Utils (Utilitaires)
+Fonctions et classes utilitaires :
+  - `DateUtils.ts` : Fonctions de manipulation de dates
+  - `ConsumptionCalculator.ts` : Calculs liés à la consommation
+
+### 2. Presentation (Présentation)
+
+#### Screens (Écrans)
+Écrans principaux de l'application :
+  - `HomeScreen.tsx` : Écran d'accueil
+  - `ReadingInputScreen.tsx` : Saisie des relevés
+  - `HistoryScreen.tsx` : Historique des consommations
+  - `ScanScreen.tsx` : Scan des compteurs (OCR)
+
+#### Components (Composants)
+Composants réutilisables :
+
+- **UI** : Composants d'interface utilisateur de base
+  - `Button.tsx` : Bouton personnalisé
+  - `Card.tsx` : Carte pour afficher des informations
+  - `DatePicker.tsx` : Sélecteur de date
+  - `Input.tsx` : Champ de saisie
+
+- **Composants spécifiques**
+  - `ReadingForm.tsx` : Formulaire de saisie des relevés
+  - `ConsumptionChart.tsx` : Graphiques de consommation
+  - `ReadingHistoryItem.tsx` : Élément d'historique
+  - `AlertNotification.tsx` : Notification d'alerte
+
+#### Navigation
+Gestion de la navigation entre les écrans :
+  - `AppNavigator.tsx` : Configuration des routes
+
+#### State (État)
+Gestion de l'état de l'application :
+
+- **Redux**
+  - `store.ts` : Configuration du store Redux
+  - **Slices**
+    - `readingsSlice.ts` : Gestion de l'état des relevés
+    - `alertsSlice.ts` : Gestion de l'état des alertes
+  - **Selectors**
+    - `readingsSelectors.ts` : Sélecteurs pour les relevés
+    - `alertsSelectors.ts` : Sélecteurs pour les alertes
+
+- **Context**
+  - `ThemeContext.tsx` : Gestion du thème de l'application
+
+### 3. Infrastructure
+
+#### Storage (Stockage)
+Services de stockage :
+  - `AsyncStorageService.ts` : Stockage local
+  - `FirebaseService.ts` : Stockage cloud
+
+#### API
+Communication avec les services externes :
+  - `ApiClient.ts` : Client API
+
+#### Services
+Implémentations de services :
+  - `OcrServiceImpl.ts` : Implémentation du service OCR
+
+## Fonctionnalités principales
+
+- Saisie manuelle des relevés de compteurs
+- Calcul automatique de la répartition des coûts
+- Historique des consommations avec visualisation graphique
+- Scan OCR des compteurs (fonctionnalité avancée)
+- Alertes de consommation anormale
+- Stockage local et synchronisation cloud (optionnel)
+
+## Technologies utilisées
+
+- **React Native** : Framework de développement mobile
+- **Expo** : Plateforme de développement React Native
+- **Redux** : Gestion de l'état global
+- **AsyncStorage** : Stockage local
+- **Firebase** (optionnel) : Backend et stockage cloud
+- **Tesseract.js/ML Kit** : OCR pour la lecture des compteurs
+
+## Installation et démarrage
+
+1. Cloner le dépôt
+```bash
+git clone https://github.com/AndriamHeritiana/KwSplit.git
+cd KwSplit
+```
+
+2. Installer les dépendances
+```bash
+npm install
+```
+
+3. Lancer l'application
+```bash
+npx expo start
+```
+
+## Contribution
+
+Les contributions sont les bienvenues ! N'hésitez pas à ouvrir une issue ou à soumettre une pull request.
